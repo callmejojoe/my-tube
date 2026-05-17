@@ -1,3 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Limelight&display=swap');
+
+:root {
+  --primarycolor: #eae2d5;
+  --secondarycolor: #28272e;
+  --accentcolor: #8549d3;
+
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
@@ -5,4 +18,18 @@ body {
   margin: auto;
   max-width: 38rem;
   padding: 2rem;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.titl {
+  font-size: 4rem;
+  font-family: 'Limelight', serif;
+  background-color: var(--accentcolor);
+  color: var(--primarycolor);
 }
