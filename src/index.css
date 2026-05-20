@@ -61,6 +61,14 @@ body {
   color: var(--primarycolor);
 }
 
+.sidebar-btn.active {
+  background-color: var(--accentcolor);
+  border-color: var(--accentcolor);
+  color: var(--primarycolor);
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+
 .content-container {
   flex: 1;
   padding: 2rem;
