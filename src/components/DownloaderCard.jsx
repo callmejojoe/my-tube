@@ -1,55 +1,43 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AppContext } from '../context/AppContext';
 
 export default function DownloaderCard({ videoInfo }) {
   const [format, setFormat] = useState(videoInfo.formats[0]?.id || 'best');
-  const [downloadState, setDownloadState] = useState('idle'); // idle, downloading, done, error
-  const [progress, setProgress] = useState(0);
-  const [logs, setLogs] = useState([]);
-  const [errorMsg, setErrorMsg] = useState('');
-  const currentJobId = useRef(null);
+  
+  const { queueState, homeState, historyState } = useContext(AppContext);
+  const { queue, setQueue } = queueState;
+  const { history } = historyState;
+  const { activeJobId, setActiveJobId } = homeState;
 
   useEffect(() => {
     setFormat(videoInfo.formats[0]?.id || 'best');
-    setDownloadState('idle');
-    setProgress(0);
-    setLogs([]);
+    // We intentionally DO NOT reset activeJobId here so it persists if the user navigates away and back.
   }, [videoInfo]);
-
-  useEffect(() => {
-    const removeListener = window.electronAPI.onDownloadProgress((data) => {
-      if (data.jobId === currentJobId.current) {
-        if (data.progress !== null && data.progress !== undefined) {
-          setProgress(data.progress);
-        }
-        if (data.log) {
-          setLogs(prev => [...prev.slice(-19), data.log]);
-        }
-        if (data.status) {
-          setDownloadState(data.status);
-        }
-        if (data.error) {
-          setErrorMsg(data.error);
-        }
-      }
-    });
-    return () => removeListener();
-  }, []);
 
   const startDownload = async () => {
     const jId = Date.now().toString();
-    currentJobId.current = jId;
-    setDownloadState('downloading');
-    setProgress(0);
-    setLogs([]);
-    setErrorMsg('');
+    setActiveJobId(jId);
+    
+    // Seed the queue immediately so it shows up in the Queue page right away
+    setQueue(prev => ({
+      ...prev,
+      [jId]: { status: 'downloading', progress: 0, filename: videoInfo.title, log: 'Starting download...' }
+    }));
     
     try {
       await window.electronAPI.startDownload({ url: videoInfo.webpage_url, format, jobId: jId });
     } catch (err) {
-      setDownloadState('error');
-      setErrorMsg(err.message);
+      console.error(err);
     }
   };
+
+  // Derive state from global context
+  const activeJob = queue[activeJobId];
+  const historyJob = history.find(h => h.jobId === activeJobId);
+  
+  const isDownloading = !!activeJob;
+  const isDone = historyJob && historyJob.status === 'done';
+  const isError = historyJob && historyJob.status === 'error';
 
   return (
     <div className="downloader-card">
@@ -72,34 +60,39 @@ export default function DownloaderCard({ videoInfo }) {
             <option key={f.id} value={f.id}>{f.label}</option>
           ))}
         </select>
-        <button onClick={startDownload} disabled={downloadState === 'downloading'} className="dl-btn">
-          {downloadState === 'downloading' ? 'Downloading...' : 'Download'}
+        <button onClick={startDownload} disabled={isDownloading || isDone} className="dl-btn">
+          {isDownloading ? 'Downloading...' : isDone ? 'Downloaded' : 'Download'}
         </button>
       </div>
 
-      {downloadState !== 'idle' && (
+      {isDownloading && (
         <div className="progress-wrap">
           <div className="progress-bar-bg">
-            <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
+            <div className="progress-bar-fill" style={{ width: `${activeJob.progress || 0}%` }}></div>
           </div>
           <div className="progress-text">
             <span>
-              <span className={`status-dot ${downloadState}`}></span>
-              {downloadState === 'downloading' ? 'Downloading...' : downloadState === 'done' ? 'Complete!' : 'Error'}
+              <span className={`status-dot downloading`}></span>
+              Downloading...
             </span>
-            <span>{Math.round(progress)}%</span>
+            <span>{Math.round(activeJob.progress || 0)}%</span>
           </div>
           
           <div className="log-box">
-            {logs.map((l, i) => <div key={i}>{l}</div>)}
+            <div>{activeJob.log || 'Starting download...'}</div>
           </div>
+        </div>
+      )}
 
-          {downloadState === 'done' && (
-            <div className="done-banner">✓ Download complete — saved to ~/Downloads/Mytube/</div>
-          )}
-          {downloadState === 'error' && (
-            <div className="error-banner">✗ {errorMsg}</div>
-          )}
+      {isDone && (
+        <div className="progress-wrap">
+          <div className="done-banner">✓ Download complete — saved to ~/Downloads/Mytube/</div>
+        </div>
+      )}
+      
+      {isError && (
+        <div className="progress-wrap">
+          <div className="error-banner">✗ {historyJob?.error || 'Download failed.'}</div>
         </div>
       )}
     </div>

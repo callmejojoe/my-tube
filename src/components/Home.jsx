@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext, useEffect } from 'react';
 import DownloaderCard from './DownloaderCard';
+import PlaylistCard from './PlaylistCard';
+import { AppContext } from '../context/AppContext';
 
 export default function Home() {
-  const [url, setUrl] = useState('');
-  const [loadingInfo, setLoadingInfo] = useState(false);
-  const [videoInfo, setVideoInfo] = useState(null);
-  const [globalError, setGlobalError] = useState('');
+  const { homeState } = useContext(AppContext);
+  const { url, setUrl, videoInfo, setVideoInfo, loadingInfo, setLoadingInfo, globalError, setGlobalError } = homeState;
 
   useEffect(() => {
     const removeListener = window.electronAPI.onYtDlpError((msg) => {
@@ -54,7 +54,13 @@ export default function Home() {
 
       {globalError && <div className="global-error">{globalError}</div>}
 
-      {videoInfo && <DownloaderCard videoInfo={videoInfo} />}
+      {videoInfo && (
+        videoInfo.isPlaylist ? (
+          <PlaylistCard videoInfo={videoInfo} />
+        ) : (
+          <DownloaderCard videoInfo={videoInfo} />
+        )
+      )}
       
     </div>
   );
