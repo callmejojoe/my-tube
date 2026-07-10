@@ -8,9 +8,11 @@ export const AppProvider = ({ children }) => {
   const [videoInfo, setVideoInfo] = useState(null);
   const [loadingInfo, setLoadingInfo] = useState(false);
   const [globalError, setGlobalError] = useState('');
-  
+
   // To track the current job started from the home page
   const [activeJobId, setActiveJobId] = useState(null);
+  const [downloadFetchId, setDownloadFetchId] = useState(null);
+  const [fID, setFID] = useState(0);
 
   // Queue state (active downloads)
   const [queue, setQueue] = useState({});
@@ -36,7 +38,7 @@ export const AppProvider = ({ children }) => {
       setQueue((prevQueue) => {
         const { jobId, status, progress, filename, log, error } = data;
         const currentJob = prevQueue[jobId] || {};
-        
+
         // If the job is done or errored, we want to move it to history
         if (status === 'done' || status === 'error') {
           setHistory((prevHistory) => [
@@ -49,7 +51,7 @@ export const AppProvider = ({ children }) => {
             },
             ...prevHistory
           ]);
-          
+
           // Remove from queue
           const newQueue = { ...prevQueue };
           delete newQueue[jobId];
@@ -76,7 +78,22 @@ export const AppProvider = ({ children }) => {
 
   return (
     <AppContext.Provider value={{
-      homeState: { url, setUrl, videoInfo, setVideoInfo, loadingInfo, setLoadingInfo, globalError, setGlobalError, activeJobId, setActiveJobId },
+      homeState: {
+        url,
+        setUrl,
+        videoInfo,
+        setVideoInfo,
+        loadingInfo,
+        setLoadingInfo,
+        globalError,
+        setGlobalError,
+        activeJobId,
+        setActiveJobId,
+        downloadFetchId,
+        setDownloadFetchId,
+        fID,
+        setFID,
+      },
       queueState: { queue, setQueue },
       historyState: { history, setHistory }
     }}>

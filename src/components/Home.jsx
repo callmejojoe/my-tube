@@ -5,7 +5,7 @@ import { AppContext } from '../context/AppContext';
 
 export default function Home() {
   const { homeState } = useContext(AppContext);
-  const { url, setUrl, videoInfo, setVideoInfo, loadingInfo, setLoadingInfo, globalError, setGlobalError } = homeState;
+  const { url, setUrl, videoInfo, setVideoInfo, loadingInfo, setLoadingInfo, globalError, setGlobalError, fID, setFID } = homeState;
 
   useEffect(() => {
     const removeListener = window.electronAPI.onYtDlpError((msg) => {
@@ -25,6 +25,9 @@ export default function Home() {
         setGlobalError(info.error);
       } else {
         setVideoInfo(info);
+        const dID = Date.now().toString(); //create an Id for every fetched url to update the download button
+        setFID(dID);
+        console.log(dID);
       }
     } catch (e) {
       setGlobalError('Failed to fetch info: ' + e.message);
@@ -35,16 +38,16 @@ export default function Home() {
   return (
     <div className='main'>
       <h1 className='titl'>My Tube</h1>
-      
-      <div className='urlsec'> 
-        <input 
-          type="text" 
-          className="urlbox" 
-          placeholder="paste yt url tehe" 
+
+      <div className='urlsec'>
+        <input
+          type="text"
+          className="urlbox"
+          placeholder="paste yt url tehe"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleFetch()}
-        /> 
+        />
         <span className='fetchit'>
           <button onClick={handleFetch} disabled={loadingInfo}>
             {loadingInfo ? 'Fetching...' : 'Fetch boi'}
@@ -61,7 +64,7 @@ export default function Home() {
           <DownloaderCard videoInfo={videoInfo} />
         )
       )}
-      
+
     </div>
   );
 }
