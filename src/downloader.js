@@ -63,7 +63,8 @@ export const registerDownloaderHandlers = (ipcMain) => {
              const combined = [
                 { id: "bestvideo[height<=1080]+bestaudio/best", label: "1080p max" },
                 { id: "bestvideo[height<=720]+bestaudio/best", label: "720p max" },
-                { id: "bestaudio[ext=m4a]/bestaudio", label: "Audio only" },
+                { id: "bestaudio[ext=m4a]/bestaudio", label: "Audio only (M4A)" },
+                { id: "mp3", label: "Audio only (MP3)" },
              ];
              resolve({
                 isPlaylist: true,
@@ -83,6 +84,7 @@ export const registerDownloaderHandlers = (ipcMain) => {
             { id: "bestvideo[height<=720]+bestaudio/best[height<=720]", label: "720p max" },
             { id: "bestvideo[height<=480]+bestaudio/best[height<=480]", label: "480p max" },
             { id: "bestaudio[ext=m4a]/bestaudio", label: "Audio only (M4A)" },
+            { id: "mp3", label: "Audio only (MP3)" },
             { id: "bestaudio", label: "Audio only (best)" },
           ];
 
@@ -109,21 +111,34 @@ export const registerDownloaderHandlers = (ipcMain) => {
     console.log(`      Is Playlist: ${!!isPlaylist}`);
     ensureYtDlp(event);
     
-    const isAudio = format.includes('bestaudio') && !format.includes('bestvideo') || format === 'bestaudio';
+    const isAudio = format === 'mp3' || format.includes('bestaudio') && !format.includes('bestvideo') || format === 'bestaudio';
     const targetDir = isAudio ? AUDIO_DIR : VIDEO_DIR;
 
     if (!isPlaylist) {
         const outputTemplate = path.join(targetDir, '%(title)s.%(ext)s');
-        const args = [
-            '-f', format,
-            '--no-playlist',
-            '--merge-output-format', 'mp4',
-            '--embed-metadata',
-            '--embed-thumbnail',
-            '--newline',
-            '-o', outputTemplate,
-            url
-        ];
+        const args = format === 'mp3'
+            ? [
+                '-f', 'bestaudio/best',
+                '--no-playlist',
+                '--extract-audio',
+                '--audio-format', 'mp3',
+                '--audio-quality', '0',
+                '--embed-metadata',
+                '--embed-thumbnail',
+                '--newline',
+                '-o', outputTemplate,
+                url
+            ]
+            : [
+                '-f', format,
+                '--no-playlist',
+                '--merge-output-format', 'mp4',
+                '--embed-metadata',
+                '--embed-thumbnail',
+                '--newline',
+                '-o', outputTemplate,
+                url
+            ];
         console.log(`[yt-dlp] Spawning: yt-dlp ${args.join(' ')}`);
         const proc = spawn('yt-dlp', args);
 
@@ -211,16 +226,29 @@ export const registerDownloaderHandlers = (ipcMain) => {
                     activeCount++;
                     
                     const itemJobId = `${jobId}_${index}`;
-                    const args = [
-                        '-f', format,
-                        '--no-playlist',
-                        '--merge-output-format', 'mp4',
-                        '--embed-metadata',
-                        '--embed-thumbnail',
-                        '--newline',
-                        '-o', outputTemplate,
-                        entry.url
-                    ];
+                    const args = format === 'mp3'
+                        ? [
+                            '-f', 'bestaudio/best',
+                            '--no-playlist',
+                            '--extract-audio',
+                            '--audio-format', 'mp3',
+                            '--audio-quality', '0',
+                            '--embed-metadata',
+                            '--embed-thumbnail',
+                            '--newline',
+                            '-o', outputTemplate,
+                            entry.url
+                        ]
+                        : [
+                            '-f', format,
+                            '--no-playlist',
+                            '--merge-output-format', 'mp4',
+                            '--embed-metadata',
+                            '--embed-thumbnail',
+                            '--newline',
+                            '-o', outputTemplate,
+                            entry.url
+                        ];
                     
                     const proc = spawn('yt-dlp', args);
                     
