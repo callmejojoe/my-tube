@@ -5,7 +5,7 @@ export default function PlaylistCard({ videoInfo }) {
   const [format, setFormat] = useState(videoInfo.formats[0]?.id || 'bestvideo[height<=1080]+bestaudio/best');
   
   const { homeState, queueState, historyState } = useContext(AppContext);
-  const { activeJobId, setActiveJobId } = homeState;
+  const { activeJobId, setActiveJobId, downloadFetchId, setDownloadFetchId, fID, setFID } = homeState;
   const { queue, setQueue } = queueState;
   const { history } = historyState;
 
@@ -16,6 +16,7 @@ export default function PlaylistCard({ videoInfo }) {
   const startDownload = async () => {
     const jId = `playlist_${Date.now()}`;
     setActiveJobId(jId);
+    setDownloadFetchId(fID);
     
     // Add placeholder to queue immediately so it shows up as active
     setQueue(prev => ({
@@ -42,9 +43,10 @@ export default function PlaylistCard({ videoInfo }) {
   // Note: For playlists, the sub-jobs are spawned as `jobId_0`, `jobId_1`, etc.
   // The main `jobId` itself might also receive events (like 'done' when the whole playlist finishes)
   // Let's check if the main jobId is in the queue, or if any sub-job is in the queue.
-  const isDownloading = Object.keys(queue).some(k => k.startsWith(activeJobId));
-  const isDone = history.some(h => h.jobId === activeJobId && h.status === 'done');
-  const isError = history.some(h => h.jobId === activeJobId && h.status === 'error');
+  const jobBelongsToThisFetch = downloadFetchId === fID;
+  const isDownloading = jobBelongsToThisFetch && Object.keys(queue).some(k => k.startsWith(activeJobId));
+  const isDone = jobBelongsToThisFetch && history.some(h => h.jobId === activeJobId && h.status === 'done');
+  const isError = jobBelongsToThisFetch && history.some(h => h.jobId === activeJobId && h.status === 'error');
 
   return (
     <div className="downloader-card">
